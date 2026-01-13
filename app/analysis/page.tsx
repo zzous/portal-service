@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { VariantAnalysis } from '../behavior/types';
 import styles from './page.module.css';
 
@@ -8,12 +8,16 @@ export default function AnalysisPage() {
   const [analysisA, setAnalysisA] = useState<VariantAnalysis | null>(null);
   const [analysisB, setAnalysisB] = useState<VariantAnalysis | null>(null);
   const [loading, setLoading] = useState(true);
+  const isFetchingRef = useRef(false);
 
-  useEffect(() => {
-    fetchAnalysis();
-  }, []);
+  const fetchAnalysis = useCallback(async () => {
+    // 중복 호출 방지
+    if (isFetchingRef.current) {
+      console.log('[Analysis] 이미 데이터를 불러오는 중입니다. 중복 호출 무시.');
+      return;
+    }
 
-  const fetchAnalysis = async () => {
+    isFetchingRef.current = true;
     setLoading(true);
     try {
       // 먼저 localStorage에서 데이터 가져오기
@@ -138,8 +142,13 @@ export default function AnalysisPage() {
       });
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchAnalysis();
+  }, [fetchAnalysis]);
 
   if (loading) {
     return (
