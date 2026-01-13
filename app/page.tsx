@@ -14,12 +14,16 @@ export default function Home() {
         </div>
         <div className={styles.ctas}>
           <Link href="/demo" className={styles.primary}>
-            <span>📊</span>
+            {/* <span>📊</span> */}
             A/B 테스트 데모
           </Link>
           <Link href="/analysis" className={styles.secondary}>
-            <span>📈</span>
+            {/* <span>📈</span> */}
             분석 결과 보기
+          </Link>
+          <Link href="/report" className={styles.secondary}>
+            {/* <span>📄</span> */}
+            구현 보고서
           </Link>
         </div>
         <div className={styles.features}>

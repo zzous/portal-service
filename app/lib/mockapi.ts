@@ -29,14 +29,27 @@ export async function saveBehaviorToMockAPI(data: unknown): Promise<MockAPIRespo
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // 404는 리소스가 없는 것으로 간주 (조용히 처리)
+      if (response.status === 404) {
+        console.warn('[MockAPI] behaviors 리소스를 찾을 수 없습니다. MockAPI.io에서 리소스를 생성해주세요.');
+        return null;
+      }
+      // 기타 HTTP 에러는 상세 정보와 함께 로그만 남기고 null 반환
+      const errorText = await response.text().catch(() => '');
+      console.warn(`[MockAPI] 행동 데이터 저장 실패 (${response.status}):`, errorText || response.statusText);
+      return null;
     }
 
     const result = await response.json();
     console.log('[MockAPI] 행동 데이터 저장 성공:', result);
     return result;
   } catch (error) {
-    console.error('[MockAPI] 행동 데이터 저장 실패:', error);
+    // 네트워크 에러 등은 조용히 처리
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.warn('[MockAPI] 네트워크 오류 또는 CORS 문제가 발생했습니다.');
+    } else {
+      console.warn('[MockAPI] 행동 데이터 저장 실패:', error instanceof Error ? error.message : error);
+    }
     return null;
   }
 }
@@ -65,13 +78,26 @@ export async function getBehaviorsFromMockAPI(
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // 404는 리소스가 없는 것으로 간주 (빈 배열 반환)
+      if (response.status === 404) {
+        console.warn('[MockAPI] behaviors 리소스를 찾을 수 없습니다. MockAPI.io에서 리소스를 생성해주세요.');
+        return [];
+      }
+      // 기타 HTTP 에러는 로그만 남기고 빈 배열 반환
+      const errorText = await response.text().catch(() => '');
+      console.warn(`[MockAPI] 행동 데이터 조회 실패 (${response.status}):`, errorText || response.statusText);
+      return [];
     }
 
     const result = await response.json();
     return Array.isArray(result) ? result : [];
   } catch (error) {
-    console.error('[MockAPI] 행동 데이터 조회 실패:', error);
+    // 네트워크 에러 등은 조용히 처리
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.warn('[MockAPI] 네트워크 오류 또는 CORS 문제가 발생했습니다.');
+    } else {
+      console.warn('[MockAPI] 행동 데이터 조회 실패:', error instanceof Error ? error.message : error);
+    }
     return [];
   }
 }
@@ -95,14 +121,27 @@ export async function saveFeedbackToMockAPI(data: unknown): Promise<MockAPIRespo
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // 404는 리소스가 없는 것으로 간주 (조용히 처리)
+      if (response.status === 404) {
+        console.warn('[MockAPI] feedbacks 리소스를 찾을 수 없습니다. MockAPI.io에서 리소스를 생성해주세요.');
+        return null;
+      }
+      // 기타 HTTP 에러는 상세 정보와 함께 로그만 남기고 null 반환
+      const errorText = await response.text().catch(() => '');
+      console.warn(`[MockAPI] 피드백 데이터 저장 실패 (${response.status}):`, errorText || response.statusText);
+      return null;
     }
 
     const result = await response.json();
     console.log('[MockAPI] 피드백 데이터 저장 성공:', result);
     return result;
   } catch (error) {
-    console.error('[MockAPI] 피드백 데이터 저장 실패:', error);
+    // 네트워크 에러 등은 조용히 처리
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.warn('[MockAPI] 네트워크 오류 또는 CORS 문제가 발생했습니다.');
+    } else {
+      console.warn('[MockAPI] 피드백 데이터 저장 실패:', error instanceof Error ? error.message : error);
+    }
     return null;
   }
 }
@@ -131,13 +170,26 @@ export async function getFeedbacksFromMockAPI(
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // 404는 리소스가 없는 것으로 간주 (빈 배열 반환)
+      if (response.status === 404) {
+        console.warn('[MockAPI] feedbacks 리소스를 찾을 수 없습니다. MockAPI.io에서 리소스를 생성해주세요.');
+        return [];
+      }
+      // 기타 HTTP 에러는 로그만 남기고 빈 배열 반환
+      const errorText = await response.text().catch(() => '');
+      console.warn(`[MockAPI] 피드백 데이터 조회 실패 (${response.status}):`, errorText || response.statusText);
+      return [];
     }
 
     const result = await response.json();
     return Array.isArray(result) ? result : [];
   } catch (error) {
-    console.error('[MockAPI] 피드백 데이터 조회 실패:', error);
+    // 네트워크 에러 등은 조용히 처리
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      console.warn('[MockAPI] 네트워크 오류 또는 CORS 문제가 발생했습니다.');
+    } else {
+      console.warn('[MockAPI] 피드백 데이터 조회 실패:', error instanceof Error ? error.message : error);
+    }
     return [];
   }
 }

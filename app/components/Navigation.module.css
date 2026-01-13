@@ -1,0 +1,121 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 18px;
+  color: #111827;
+  transition: opacity 0.2s;
+}
+
+.logo:hover {
+  opacity: 0.8;
+}
+
+.logoIcon {
+  font-size: 24px;
+}
+
+.logoText {
+  display: none;
+}
+
+.menu {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #6b7280;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.link:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.link.active {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.icon {
+  font-size: 18px;
+}
+
+.label {
+  display: none;
+}
+
+/* 태블릿 이상에서 라벨 표시 */
+@media (min-width: 768px) {
+  .logoText {
+    display: inline;
+  }
+
+  .label {
+    display: inline;
+  }
+}
+
+/* 다크 모드 지원 */
+@media (prefers-color-scheme: dark) {
+  .nav {
+    background: rgba(17, 24, 39, 0.95);
+    border-bottom-color: #374151;
+  }
+
+  .logo {
+    color: #f9fafb;
+  }
+
+  .link {
+    color: #9ca3af;
+  }
+
+  .link:hover {
+    background: #374151;
+    color: #f9fafb;
+  }
+
+  .link.active {
+    background: #1e3a8a;
+    color: #93c5fd;
+  }
+}
+

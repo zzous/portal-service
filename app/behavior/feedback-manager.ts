@@ -130,15 +130,9 @@ export class FeedbackManager {
             feedbackCount: 0,
           };
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.warn('[Feedback] API를 사용할 수 없습니다');
-        // 기본값 반환
+        // HTTP 에러는 조용히 처리하고 기본값 반환
+        const errorText = await response.text().catch(() => '');
+        console.warn(`[Feedback] 분석 API 실패 (${response.status}):`, errorText || response.statusText);
         return {
           variant,
           avgRating: 0,
@@ -151,8 +145,27 @@ export class FeedbackManager {
           feedbackCount: 0,
         };
       }
-      console.error('[Feedback] 분석 실패:', error);
-      throw error;
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.warn('[Feedback] API를 사용할 수 없습니다');
+      } else {
+        console.warn('[Feedback] 분석 실패:', error instanceof Error ? error.message : error);
+      }
+      // 기본값 반환 (에러를 throw하지 않음)
+      return {
+        variant,
+        avgRating: 0,
+        behaviorMetrics: {
+          avgTimeOnPage: 0,
+          conversionRate: 0,
+          engagementScore: 0,
+          totalSessions: 0,
+        },
+        feedbackCount: 0,
+      };
     }
   }
 }
