@@ -1,8 +1,14 @@
+export interface ClickMetadata {
+  x?: number;
+  y?: number;
+  [key: string]: unknown;
+}
+
 export interface BehaviorEvent {
   type: 'click' | 'scroll' | 'view' | 'hover' | 'exit' | 'conversion';
   element?: string; // 선택자 또는 요소 ID
   timestamp: number; // 상대 시간 (페이지 로드 후 ms)
-  value?: any; // 추가 데이터 (스크롤 위치, 클릭 좌표 등)
+  value?: number | string | ClickMetadata; // 추가 데이터 (스크롤 위치, 클릭 좌표 등)
   pagePath: string;
 }
 

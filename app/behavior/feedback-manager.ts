@@ -73,7 +73,17 @@ export class FeedbackManager {
       ClientStorage.saveFeedback(feedbackData);
     }
 
-    // API가 있으면 서버에도 전송
+    // MockAPI.io에 전송 (환경 변수 설정 시)
+    if (typeof window !== 'undefined') {
+      try {
+        const { saveFeedbackToMockAPI } = await import('../lib/mockapi');
+        await saveFeedbackToMockAPI(feedbackData);
+      } catch (error) {
+        console.warn('[Feedback] MockAPI 전송 실패:', error);
+      }
+    }
+
+    // 로컬 API가 있으면 서버에도 전송
     try {
       const response = await fetch('/api/feedback', {
         method: 'POST',
@@ -86,14 +96,14 @@ export class FeedbackManager {
       if (!response.ok) {
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('text/html')) {
-          console.log('[Feedback] API 없음, localStorage에 저장됨');
+          console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
         } else {
           console.error('[Feedback] 피드백 전송 실패:', response.status);
         }
       }
     } catch (error) {
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('[Feedback] API 없음, localStorage에 저장됨');
+        console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
       } else {
         console.error('[Feedback] 피드백 전송 오류:', error);
       }

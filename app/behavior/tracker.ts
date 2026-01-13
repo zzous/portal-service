@@ -66,7 +66,7 @@ export class BehaviorTracker {
     }, 30000);
   }
 
-  trackClick(element: string, metadata?: Record<string, any>): void {
+  trackClick(element: string, metadata?: { x?: number; y?: number; [key: string]: unknown }): void {
     const event: BehaviorEvent = {
       type: 'click',
       element,
@@ -156,7 +156,18 @@ export class BehaviorTracker {
       ClientStorage.saveBehavior(behavior);
     }
     
-    // API가 있으면 서버에도 전송
+    // MockAPI.io에 전송 (환경 변수 설정 시)
+    if (typeof window !== 'undefined') {
+      try {
+        const { saveBehaviorToMockAPI } = await import('../lib/mockapi');
+        await saveBehaviorToMockAPI(behavior);
+      } catch (error) {
+        // MockAPI 실패해도 계속 진행
+        console.warn('[Tracker] MockAPI 전송 실패:', error);
+      }
+    }
+    
+    // 로컬 API가 있으면 서버에도 전송
     try {
       const response = await fetch('/api/behavior', {
         method: 'POST',
@@ -168,7 +179,7 @@ export class BehaviorTracker {
       
       if (response.ok) {
         const data = await response.json();
-        console.log('[Tracker] 행동 데이터 전송 성공:', {
+        console.log('[Tracker] 로컬 API 전송 성공:', {
           sessionId: behavior.sessionId,
           variant: behavior.variant,
           events: behavior.events.length,
@@ -178,17 +189,17 @@ export class BehaviorTracker {
         // API가 사용 불가능한 경우 - localStorage에만 저장됨
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('text/html')) {
-          console.log('[Tracker] API 없음, localStorage에 저장됨');
+          console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
         } else {
-          console.error('[Tracker] 행동 데이터 전송 실패:', response.status);
+          console.error('[Tracker] 로컬 API 전송 실패:', response.status);
         }
       }
     } catch (error) {
       // 네트워크 오류 등 - localStorage에만 저장됨
       if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('[Tracker] API 없음, localStorage에 저장됨');
+        console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
       } else {
-        console.error('[Tracker] 행동 데이터 전송 오류:', error);
+        console.error('[Tracker] 로컬 API 전송 오류:', error);
       }
     }
   }
