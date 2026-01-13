@@ -316,9 +316,199 @@ export default function ReportPage() {
         </section>
 
         <section className={styles.section}>
-          <h2>10. 결론</h2>
+          <h2>10. 행태감지 시스템 구현 방식 비교</h2>
+
+          <h3>10.1 일반적인 행태감지 시스템 구현 방식</h3>
+          
+          <div className={styles.approachGrid}>
+            <div className={styles.approachCard}>
+              <h4>클라이언트 사이드 추적 (현재 방식)</h4>
+              <p><strong>대표 사례:</strong> Google Analytics, Mixpanel, Amplitude, Hotjar</p>
+              <div className={styles.approachDetails}>
+                <p><strong>구현 방식:</strong></p>
+                <ul>
+                  <li>JavaScript SDK를 클라이언트에 삽입</li>
+                  <li>이벤트 리스너로 사용자 행동 추적</li>
+                  <li>배치 전송 (30초~5분 간격)</li>
+                  <li>실시간 전송 (중요 이벤트)</li>
+                </ul>
+                <p><strong>장점:</strong></p>
+                <ul>
+                  <li>✅ 실시간 데이터 수집</li>
+                  <li>✅ 사용자 경험에 영향 최소화</li>
+                  <li>✅ 서버 부하 분산</li>
+                </ul>
+                <p><strong>단점:</strong></p>
+                <ul>
+                  <li>❌ 브라우저 확장 프로그램으로 차단 가능</li>
+                  <li>❌ 네트워크 오류 시 데이터 손실 가능</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className={styles.approachCard}>
+              <h4>서버 사이드 추적</h4>
+              <p><strong>대표 사례:</strong> 로그 분석 시스템, 백엔드 이벤트 추적</p>
+              <div className={styles.approachDetails}>
+                <p><strong>구현 방식:</strong></p>
+                <ul>
+                  <li>서버 로그 수집</li>
+                  <li>API 엔드포인트에서 이벤트 기록</li>
+                  <li>서버 측 세션 관리</li>
+                </ul>
+                <p><strong>장점:</strong></p>
+                <ul>
+                  <li>✅ 데이터 조작 불가능</li>
+                  <li>✅ 보안성 높음</li>
+                  <li>✅ 모든 요청 추적 가능</li>
+                </ul>
+                <p><strong>단점:</strong></p>
+                <ul>
+                  <li>❌ 클라이언트 측 상호작용 추적 어려움</li>
+                  <li>❌ 서버 부하 증가</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className={styles.approachCard}>
+              <h4>하이브리드 방식</h4>
+              <p><strong>대표 사례:</strong> Adobe Analytics, Segment</p>
+              <div className={styles.approachDetails}>
+                <p><strong>구현 방식:</strong></p>
+                <ul>
+                  <li>클라이언트에서 이벤트 수집</li>
+                  <li>서버로 전송하여 검증 및 저장</li>
+                  <li>양쪽 데이터 병합 분석</li>
+                </ul>
+                <p><strong>장점:</strong></p>
+                <ul>
+                  <li>✅ 데이터 정확성 향상</li>
+                  <li>✅ 보안성과 실시간성 균형</li>
+                </ul>
+                <p><strong>단점:</strong></p>
+                <ul>
+                  <li>❌ 구현 복잡도 증가</li>
+                  <li>❌ 인프라 비용 증가</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+          <h3>10.2 현재 프로젝트의 구현 방식</h3>
+          
+          <div className={styles.currentApproach}>
+            <div className={styles.currentMethod}>
+              <h4>클라이언트 사이드 추적</h4>
+              <p><strong>일반적인 방식과의 비교:</strong></p>
+              <ul>
+                <li>✅ 표준적인 클라이언트 사이드 추적 방식</li>
+                <li>✅ 배치 전송으로 네트워크 효율성 확보</li>
+                <li>✅ localStorage로 오프라인 지원</li>
+              </ul>
+            </div>
+
+            <div className={styles.currentMethod}>
+              <h4>빌드 스크립트 처리 (특수한 경우)</h4>
+              <p><strong>이 방식이 필요한 이유:</strong></p>
+              <ul>
+                <li>Next.js <code>output: &apos;export&apos;</code> (정적 사이트 생성) 사용</li>
+                <li>GitHub Pages는 정적 호스팅만 지원</li>
+                <li>API 라우트는 서버가 필요하므로 정적 빌드와 충돌</li>
+              </ul>
+              <p><strong>일반적인 프로젝트에서는:</strong></p>
+              <ul>
+                <li>❌ 이런 스크립트가 필요 없음</li>
+                <li>✅ 서버가 있는 환경에서는 API 라우트 그대로 사용</li>
+                <li>✅ Vercel, Netlify 등 서버리스 플랫폼 사용 시 자동 처리</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>10.3 업계 표준 방식</h3>
+          
+          <div className={styles.standardFlow}>
+            <div className={styles.flowItem}>
+              <h4>대규모 서비스</h4>
+              <p>Google Analytics, Mixpanel</p>
+              <div className={styles.flowDiagram}>
+                클라이언트 SDK → 배치 전송 → 서버 수집 → 데이터베이스 → 분석
+              </div>
+            </div>
+            <div className={styles.flowItem}>
+              <h4>중소규모 서비스</h4>
+              <p>직접 구현</p>
+              <div className={styles.flowDiagram}>
+                클라이언트 추적 → 직접 API 호출 → 데이터베이스 → 대시보드
+              </div>
+            </div>
+            <div className={styles.flowItem}>
+              <h4>현재 프로젝트</h4>
+              <p>프로토타입/데모</p>
+              <div className={styles.flowDiagram}>
+                클라이언트 추적 → localStorage + MockAPI.io + 로컬 API → 분석
+              </div>
+            </div>
+          </div>
+
+          <h3>10.4 프로덕션 환경 권장 사항</h3>
+          
+          <div className={styles.recommendations}>
+            <div className={styles.recommendationCard}>
+              <h4>전용 분석 서비스 사용</h4>
+              <p>Google Analytics, Mixpanel 등</p>
+              <ul>
+                <li>검증된 인프라</li>
+                <li>자동 확장</li>
+                <li>풍부한 분석 기능</li>
+              </ul>
+            </div>
+            <div className={styles.recommendationCard}>
+              <h4>하이브리드 클라우드 서비스</h4>
+              <ul>
+                <li>Segment (이벤트 수집)</li>
+                <li>Amplitude (행동 분석)</li>
+                <li>Hotjar (세션 리플레이)</li>
+              </ul>
+            </div>
+          </div>
+
+          <h3>10.5 현재 방식의 평가</h3>
+          
+          <div className={styles.evaluation}>
+            <div className={styles.evalItem}>
+              <h4>✅ 행동 추적 로직</h4>
+              <p>업계 표준 방식과 유사 (클라이언트 사이드)</p>
+            </div>
+            <div className={styles.evalItem}>
+              <h4>⚠️ 빌드 스크립트</h4>
+              <p>특수한 환경(GitHub Pages) 때문에 필요한 임시 방편</p>
+            </div>
+            <div className={styles.evalItem}>
+              <h4>✅ 데이터 저장</h4>
+              <p>다중 저장소 전략은 좋은 접근</p>
+            </div>
+          </div>
+
+          <div className={styles.improvement}>
+            <h4>개선이 필요한 부분</h4>
+            <ul>
+              <li><strong>데이터베이스 연동:</strong> localStorage + MockAPI.io (임시) → PostgreSQL/MongoDB 연동</li>
+              <li><strong>빌드 스크립트 제거:</strong> Vercel/Netlify 사용 또는 서버 환경 구축</li>
+              <li><strong>데이터 검증 및 정제:</strong> 서버 측 검증 추가</li>
+              <li><strong>실시간 분석:</strong> WebSocket 또는 Server-Sent Events</li>
+            </ul>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <h2>11. 결론</h2>
           <p className={styles.conclusion}>
             본 행태감지 시스템은 사용자의 행동 패턴을 실시간으로 추적하고 분석하여, A/B 테스트 결과를 도출하고 데이터 기반 의사결정을 지원합니다. 
+            클라이언트 사이드와 서버 사이드를 모두 활용한 이중 저장 구조로 다양한 배포 환경에서 안정적으로 작동하며, 
+            향후 데이터베이스 연동을 통한 확장이 가능한 구조로 설계되었습니다.
+            <br /><br />
+            현재 구현 방식은 프로토타입/데모 목적에는 적합하며, 학습 및 개념 검증에는 우수합니다. 
+            프로덕션 환경에서는 전용 데이터베이스 연동, 서버 측 검증, 실시간 분석 파이프라인 구축 등의 개선이 필요합니다.
           </p>
         </section>
       </div>
