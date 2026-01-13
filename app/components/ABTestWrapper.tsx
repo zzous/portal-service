@@ -55,10 +55,11 @@ export function ABTestWrapper({
       trackerRef.current.trackPageView(pathname);
     }
 
-    // 언마운트 시 데이터 전송
+    // 언마운트 시 데이터 전송 및 정리
     return () => {
       if (trackerRef.current) {
         trackerRef.current.sendBehaviorData();
+        trackerRef.current.cleanup();
       }
     };
   }, [testName, pathname, forceVariant]);

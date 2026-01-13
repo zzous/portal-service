@@ -10,6 +10,8 @@ export class BehaviorTracker {
   private maxScrollDepth: number = 0;
   private clickCount: number = 0;
   private pagesVisited: Set<string> = new Set();
+  private autoSendInterval: NodeJS.Timeout | null = null;
+  private isSending: boolean = false;
 
   constructor(variant: 'A' | 'B', pagePath: string = '/') {
     this.variant = variant;
@@ -61,9 +63,17 @@ export class BehaviorTracker {
     window.addEventListener('beforeunload', handleBeforeUnload);
 
     // 주기적으로 데이터 전송 (30초마다)
-    setInterval(() => {
+    this.autoSendInterval = setInterval(() => {
       this.sendBehaviorData();
     }, 30000);
+  }
+
+  // 이벤트 리스너 정리 및 interval 정리
+  cleanup(): void {
+    if (this.autoSendInterval) {
+      clearInterval(this.autoSendInterval);
+      this.autoSendInterval = null;
+    }
   }
 
   trackClick(element: string, metadata?: { x?: number; y?: number; [key: string]: unknown }): void {
@@ -148,59 +158,70 @@ export class BehaviorTracker {
   }
 
   async sendBehaviorData(): Promise<void> {
+    // 중복 호출 방지
+    if (this.isSending) {
+      console.log('[Tracker] 이미 전송 중입니다. 중복 호출 무시.');
+      return;
+    }
+
+    this.isSending = true;
     const behavior = this.getCurrentBehavior();
     
-    // 먼저 localStorage에 저장 (항상 작동)
-    if (typeof window !== 'undefined') {
-      const { ClientStorage } = await import('../lib/client-storage');
-      ClientStorage.saveBehavior(behavior);
-    }
-    
-    // MockAPI.io에 전송 (환경 변수 설정 시)
-    if (typeof window !== 'undefined') {
-      try {
-        const { saveBehaviorToMockAPI } = await import('../lib/mockapi');
-        await saveBehaviorToMockAPI(behavior);
-      } catch (error) {
-        // MockAPI 실패해도 계속 진행
-        console.warn('[Tracker] MockAPI 전송 실패:', error);
-      }
-    }
-    
-    // 로컬 API가 있으면 서버에도 전송
     try {
-      const response = await fetch('/api/behavior', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(behavior),
-      });
+      // 먼저 localStorage에 저장 (항상 작동)
+      if (typeof window !== 'undefined') {
+        const { ClientStorage } = await import('../lib/client-storage');
+        ClientStorage.saveBehavior(behavior);
+      }
       
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[Tracker] 로컬 API 전송 성공:', {
-          sessionId: behavior.sessionId,
-          variant: behavior.variant,
-          events: behavior.events.length,
-          shouldRequestFeedback: data.shouldRequestFeedback,
-        });
-      } else {
-        // API가 사용 불가능한 경우 - localStorage에만 저장됨
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('text/html')) {
-          console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
-        } else {
-          console.error('[Tracker] 로컬 API 전송 실패:', response.status);
+      // MockAPI.io에 전송 (환경 변수 설정 시)
+      if (typeof window !== 'undefined') {
+        try {
+          const { saveBehaviorToMockAPI } = await import('../lib/mockapi');
+          await saveBehaviorToMockAPI(behavior);
+        } catch (error) {
+          // MockAPI 실패해도 계속 진행
+          console.warn('[Tracker] MockAPI 전송 실패:', error);
         }
       }
-    } catch (error) {
-      // 네트워크 오류 등 - localStorage에만 저장됨
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
-      } else {
-        console.error('[Tracker] 로컬 API 전송 오류:', error);
+      
+      // 로컬 API가 있으면 서버에도 전송
+      try {
+        const response = await fetch('/api/behavior', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(behavior),
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[Tracker] 로컬 API 전송 성공:', {
+            sessionId: behavior.sessionId,
+            variant: behavior.variant,
+            events: behavior.events.length,
+            shouldRequestFeedback: data.shouldRequestFeedback,
+          });
+        } else {
+          // API가 사용 불가능한 경우 - localStorage에만 저장됨
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('text/html')) {
+            console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
+          } else {
+            console.error('[Tracker] 로컬 API 전송 실패:', response.status);
+          }
+        }
+      } catch (error) {
+        // 네트워크 오류 등 - localStorage에만 저장됨
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
+        } else {
+          console.error('[Tracker] 로컬 API 전송 오류:', error);
+        }
       }
+    } finally {
+      this.isSending = false;
     }
   }
 

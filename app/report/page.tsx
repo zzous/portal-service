@@ -38,15 +38,6 @@ export default function ReportPage() {
             </div>
             <div className={styles.arrow}>↓</div>
             <div className={styles.layer}>
-              <h4>데이터 저장 계층</h4>
-              <ul>
-                <li>localStorage (클라이언트)</li>
-                <li>서버 메모리 (개발 환경)</li>
-                <li>MockAPI.io (외부 API)</li>
-              </ul>
-            </div>
-            <div className={styles.arrow}>↓</div>
-            <div className={styles.layer}>
               <h4>분석 및 시각화</h4>
               <ul>
                 <li>Analysis Dashboard</li>
@@ -289,9 +280,6 @@ export default function ReportPage() {
             <div className={styles.techItem}>
               <strong>CI/CD:</strong> GitHub Actions
             </div>
-            <div className={styles.techItem}>
-              <strong>외부 API:</strong> MockAPI.io
-            </div>
           </div>
         </section>
 
@@ -305,10 +293,6 @@ export default function ReportPage() {
               <p>사용자 경험을 방해하지 않는 자동 추적</p>
             </div>
             <div className={styles.advantageCard}>
-              <h4>이중 저장 구조</h4>
-              <p>다양한 배포 환경에서 작동 (localStorage + MockAPI.io)</p>
-            </div>
-            <div className={styles.advantageCard}>
               <h4>실시간 분석</h4>
               <p>즉시 피드백 및 분석 결과 확인</p>
             </div>
@@ -317,22 +301,12 @@ export default function ReportPage() {
               <p>새로운 이벤트 타입 및 트리거 조건 추가 용이</p>
             </div>
           </div>
-
-          <h3>8.2 제한사항</h3>
-          <div className={styles.limitations}>
-            <ul>
-              <li><strong>서버 메모리 저장:</strong> 서버 재시작 시 데이터 손실 (개발 환경)</li>
-              <li><strong>정적 사이트 제약:</strong> GitHub Pages 배포 시 API 미사용</li>
-              <li><strong>브라우저 의존성:</strong> localStorage 사용으로 브라우저별 저장 용량 제한</li>
-            </ul>
-          </div>
         </section>
 
         <section className={styles.section}>
           <h2>9. 향후 개선 방향</h2>
           <div className={styles.future}>
             <ul>
-              <li><strong>데이터베이스 연동:</strong> 영구 저장을 위한 DB 연동 (PostgreSQL, MongoDB 등)</li>
               <li><strong>실시간 대시보드:</strong> WebSocket을 통한 실시간 데이터 업데이트</li>
               <li><strong>고급 분석:</strong> 머신러닝 기반 이상 행동 탐지</li>
               <li><strong>다중 테스트:</strong> 동시에 여러 A/B 테스트 실행 지원</li>
@@ -345,8 +319,6 @@ export default function ReportPage() {
           <h2>10. 결론</h2>
           <p className={styles.conclusion}>
             본 행태감지 시스템은 사용자의 행동 패턴을 실시간으로 추적하고 분석하여, A/B 테스트 결과를 도출하고 데이터 기반 의사결정을 지원합니다. 
-            클라이언트 사이드와 서버 사이드를 모두 활용한 이중 저장 구조로 다양한 배포 환경에서 안정적으로 작동하며, 
-            향후 데이터베이스 연동을 통한 확장이 가능한 구조로 설계되었습니다.
           </p>
         </section>
       </div>
