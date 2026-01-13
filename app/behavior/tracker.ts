@@ -150,6 +150,13 @@ export class BehaviorTracker {
   async sendBehaviorData(): Promise<void> {
     const behavior = this.getCurrentBehavior();
     
+    // 먼저 localStorage에 저장 (항상 작동)
+    if (typeof window !== 'undefined') {
+      const { ClientStorage } = await import('../lib/client-storage');
+      ClientStorage.saveBehavior(behavior);
+    }
+    
+    // API가 있으면 서버에도 전송
     try {
       const response = await fetch('/api/behavior', {
         method: 'POST',
@@ -168,10 +175,21 @@ export class BehaviorTracker {
           shouldRequestFeedback: data.shouldRequestFeedback,
         });
       } else {
-        console.error('[Tracker] 행동 데이터 전송 실패:', response.status);
+        // API가 사용 불가능한 경우 - localStorage에만 저장됨
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          console.log('[Tracker] API 없음, localStorage에 저장됨');
+        } else {
+          console.error('[Tracker] 행동 데이터 전송 실패:', response.status);
+        }
       }
     } catch (error) {
-      console.error('[Tracker] 행동 데이터 전송 오류:', error);
+      // 네트워크 오류 등 - localStorage에만 저장됨
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.log('[Tracker] API 없음, localStorage에 저장됨');
+      } else {
+        console.error('[Tracker] 행동 데이터 전송 오류:', error);
+      }
     }
   }
 

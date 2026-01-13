@@ -16,18 +16,126 @@ export default function AnalysisPage() {
   const fetchAnalysis = async () => {
     setLoading(true);
     try {
-      const [resA, resB] = await Promise.all([
-        fetch('/api/feedback/analysis?variant=A'),
-        fetch('/api/feedback/analysis?variant=B'),
-      ]);
+      // 먼저 localStorage에서 데이터 가져오기
+      const { ClientStorage } = await import('../lib/client-storage');
+      const behaviorsA = ClientStorage.getBehaviorsByVariant('A');
+      const behaviorsB = ClientStorage.getBehaviorsByVariant('B');
+      const feedbacksA = ClientStorage.getFeedbacksByVariant('A');
+      const feedbacksB = ClientStorage.getFeedbacksByVariant('B');
 
-      const dataA = await resA.json();
-      const dataB = await resB.json();
+      // localStorage 데이터로 분석 계산
+      const calculateAnalysis = (
+        variant: 'A' | 'B',
+        behaviors: any[],
+        feedbacks: any[]
+      ): VariantAnalysis => {
+        const ratings = feedbacks
+          .map((f) => f.feedback?.rating)
+          .filter((r): r is number => r !== undefined && r !== null);
+        const avgRating =
+          ratings.length > 0
+            ? ratings.reduce((sum, r) => sum + r, 0) / ratings.length
+            : 0;
+
+        const timeOnPageValues = behaviors.map((b) => b.summary?.timeOnPage || 0);
+        const avgTimeOnPage =
+          timeOnPageValues.length > 0
+            ? timeOnPageValues.reduce((sum, t) => sum + t, 0) / timeOnPageValues.length
+            : 0;
+
+        const conversions = behaviors.filter((b) =>
+          b.events?.some((e: any) => e.type === 'conversion')
+        );
+        const conversionRate =
+          behaviors.length > 0 ? (conversions.length / behaviors.length) * 100 : 0;
+
+        const engagementScores = behaviors.map((b: any) => {
+          const clickScore = (b.summary?.clickCount || 0) * 10;
+          const scrollScore = b.summary?.scrollDepth || 0;
+          return clickScore + scrollScore;
+        });
+        const engagementScore =
+          engagementScores.length > 0
+            ? engagementScores.reduce((sum, s) => sum + s, 0) / engagementScores.length
+            : 0;
+
+        return {
+          variant,
+          avgRating,
+          behaviorMetrics: {
+            avgTimeOnPage,
+            conversionRate,
+            engagementScore,
+            totalSessions: behaviors.length,
+          },
+          feedbackCount: feedbacks.length,
+        };
+      };
+
+      let dataA = calculateAnalysis('A', behaviorsA, feedbacksA);
+      let dataB = calculateAnalysis('B', behaviorsB, feedbacksB);
+
+      // API가 있으면 서버에서도 가져오기 (병합)
+      try {
+        const [resA, resB] = await Promise.all([
+          fetch('/api/feedback/analysis?variant=A'),
+          fetch('/api/feedback/analysis?variant=B'),
+        ]);
+
+        const contentTypeA = resA.headers.get('content-type');
+        const contentTypeB = resB.headers.get('content-type');
+
+        if (resA.ok && contentTypeA && contentTypeA.includes('application/json')) {
+          try {
+            const apiDataA = await resA.json();
+            // 서버 데이터와 병합 (서버 데이터 우선)
+            dataA = apiDataA;
+          } catch (e) {
+            // 파싱 실패 시 localStorage 데이터 사용
+          }
+        }
+
+        if (resB.ok && contentTypeB && contentTypeB.includes('application/json')) {
+          try {
+            const apiDataB = await resB.json();
+            // 서버 데이터와 병합 (서버 데이터 우선)
+            dataB = apiDataB;
+          } catch (e) {
+            // 파싱 실패 시 localStorage 데이터 사용
+          }
+        }
+      } catch (error) {
+        // API 실패 시 localStorage 데이터만 사용
+        console.log('[Analysis] API 없음, localStorage 데이터 사용');
+      }
 
       setAnalysisA(dataA);
       setAnalysisB(dataB);
     } catch (error) {
-      console.error('Failed to fetch analysis:', error);
+      console.error('[Analysis] 분석 데이터 로드 실패:', error);
+      // 에러 발생 시 기본값 설정
+      setAnalysisA({
+        variant: 'A',
+        avgRating: 0,
+        behaviorMetrics: {
+          avgTimeOnPage: 0,
+          conversionRate: 0,
+          engagementScore: 0,
+          totalSessions: 0,
+        },
+        feedbackCount: 0,
+      });
+      setAnalysisB({
+        variant: 'B',
+        avgRating: 0,
+        behaviorMetrics: {
+          avgTimeOnPage: 0,
+          conversionRate: 0,
+          engagementScore: 0,
+          totalSessions: 0,
+        },
+        feedbackCount: 0,
+      });
     } finally {
       setLoading(false);
     }

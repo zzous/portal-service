@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackData, VariantAnalysis } from '@/app/behavior/types';
-
-// 간단한 인메모리 저장소 (실제로는 DB 사용)
-const feedbackStore: FeedbackData[] = [];
+import { feedbackStore } from '@/app/lib/storage';
 
 export async function POST(request: NextRequest) {
   try {

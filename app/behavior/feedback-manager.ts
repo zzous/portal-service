@@ -67,26 +67,81 @@ export class FeedbackManager {
       },
     };
 
+    // 먼저 localStorage에 저장 (항상 작동)
+    if (typeof window !== 'undefined') {
+      const { ClientStorage } = await import('../lib/client-storage');
+      ClientStorage.saveFeedback(feedbackData);
+    }
+
+    // API가 있으면 서버에도 전송
     try {
-      await fetch('/api/feedback', {
+      const response = await fetch('/api/feedback', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(feedbackData),
       });
+      
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          console.log('[Feedback] API 없음, localStorage에 저장됨');
+        } else {
+          console.error('[Feedback] 피드백 전송 실패:', response.status);
+        }
+      }
     } catch (error) {
-      console.error('Failed to send feedback:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.log('[Feedback] API 없음, localStorage에 저장됨');
+      } else {
+        console.error('[Feedback] 피드백 전송 오류:', error);
+      }
     }
   }
 
   async analyzeVariantFeedback(variant: 'A' | 'B'): Promise<VariantAnalysis> {
     try {
       const response = await fetch(`/api/feedback/analysis?variant=${variant}`);
+      
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('text/html')) {
+          // 정적 사이트 환경 - 기본값 반환
+          return {
+            variant,
+            avgRating: 0,
+            behaviorMetrics: {
+              avgTimeOnPage: 0,
+              conversionRate: 0,
+              engagementScore: 0,
+              totalSessions: 0,
+            },
+            feedbackCount: 0,
+          };
+        }
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
       return data;
     } catch (error) {
-      console.error('Failed to analyze variant feedback:', error);
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.warn('[Feedback] API를 사용할 수 없습니다');
+        // 기본값 반환
+        return {
+          variant,
+          avgRating: 0,
+          behaviorMetrics: {
+            avgTimeOnPage: 0,
+            conversionRate: 0,
+            engagementScore: 0,
+            totalSessions: 0,
+          },
+          feedbackCount: 0,
+        };
+      }
+      console.error('[Feedback] 분석 실패:', error);
       throw error;
     }
   }
