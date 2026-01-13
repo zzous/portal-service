@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
+  // API 라우트는 정적 빌드에서 자동으로 제외됩니다
 };
 
 export default nextConfig;

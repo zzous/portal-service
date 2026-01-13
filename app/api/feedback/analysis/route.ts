@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { VariantAnalysis, FeedbackData, UserBehavior } from '@/app/behavior/types';
 import { behaviorStore, feedbackStore } from '@/app/lib/storage';
 
+// 정적 사이트 빌드에서 제외 (output: 'export' 사용 시)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = false;
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);

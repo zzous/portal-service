@@ -1,6 +1,14 @@
+// 정적 사이트 빌드에서는 이 파일이 무시됩니다
+// 클라이언트 사이드에서 localStorage를 사용합니다
+
 import { NextRequest, NextResponse } from 'next/server';
 import { UserBehavior } from '@/app/behavior/types';
 import { behaviorStore } from '@/app/lib/storage';
+
+// 정적 사이트 빌드에서 제외 (output: 'export' 사용 시)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = false;
 
 export async function POST(request: NextRequest) {
   try {
@@ -87,4 +95,3 @@ function checkFeedbackTriggers(behavior: UserBehavior): boolean {
 
   return false;
 }
-

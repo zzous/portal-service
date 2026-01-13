@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run build:static",
+    "build:static": "node scripts/prepare-build.js && next build",
     "start": "next start",
     "lint": "eslint"
   },

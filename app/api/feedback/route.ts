@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { FeedbackData, VariantAnalysis } from '@/app/behavior/types';
 import { feedbackStore } from '@/app/lib/storage';
 
+// 정적 사이트 빌드에서 제외 (output: 'export' 사용 시)
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+export const revalidate = false;
+
 export async function POST(request: NextRequest) {
   try {
     const feedbackData: FeedbackData = await request.json();
