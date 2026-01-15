@@ -188,23 +188,20 @@ export class BehaviorTracker {
       }
       
       // Supabase에 저장 (환경 변수가 설정된 경우)
-      let supabaseSaved = false;
       try {
         const { saveBehaviorToSupabase } = await import('../lib/supabase-storage');
         const result = await saveBehaviorToSupabase(behavior);
         if (result) {
           console.log('[Tracker] Supabase 저장 성공:', result.id);
-          supabaseSaved = true;
         }
       } catch (error) {
         // Supabase 저장 실패는 조용히 처리 (localStorage는 이미 저장됨)
         console.log('[Tracker] Supabase 저장 건너뜀:', error instanceof Error ? error.message : 'Unknown error');
       }
       
-      // Supabase 저장이 실패했거나 설정되지 않은 경우에만 로컬 API 호출
-      // (Supabase가 있으면 API는 건너뛰고, Supabase가 없으면 API 사용)
-      // GitHub Pages에서는 API 호출 건너뜀 (Netlify는 Functions 사용 가능)
-      if (!supabaseSaved && typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
+      // Netlify에서는 API 호출 가능 (GitHub Pages는 제외)
+      // Supabase와 관계없이 API도 함께 호출 (중복 저장 가능)
+      if (typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
         try {
           const response = await fetch('/api/behavior', {
             method: 'POST',
@@ -216,29 +213,25 @@ export class BehaviorTracker {
           
           if (response.ok) {
             const data = await response.json();
-            console.log('[Tracker] 로컬 API 전송 성공:', {
+            console.log('[Tracker] API 전송 성공:', {
               sessionId: behavior.sessionId,
               variant: behavior.variant,
               events: behavior.events.length,
               shouldRequestFeedback: data.shouldRequestFeedback,
             });
           } else {
-            // API가 사용 불가능한 경우 - localStorage에만 저장됨
+            // API가 사용 불가능한 경우
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('text/html')) {
-              console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
+              console.log('[Tracker] API 없음 (정적 사이트)');
             } else {
-              console.log('[Tracker] 로컬 API 전송 실패:', response.status);
+              console.log('[Tracker] API 전송 실패:', response.status);
             }
           }
         } catch {
-          // 네트워크 오류 등 - localStorage에만 저장됨
-          console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
+          // 네트워크 오류 등
+          console.log('[Tracker] API 호출 실패');
         }
-      } else if (supabaseSaved) {
-        console.log('[Tracker] Supabase 저장 완료, 로컬 API 호출 건너뜀');
-      } else {
-        console.log('[Tracker] 정적 사이트 환경, 로컬 API 호출 건너뜀');
       }
     } finally {
       this.isSending = false;
