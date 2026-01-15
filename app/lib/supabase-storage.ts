@@ -19,7 +19,7 @@ export async function saveBehaviorToSupabase(
   }
 
   try {
-    const { data, error } = await client
+    const { data, error } = await (client
       .from('behaviors')
       .insert({
         session_id: behavior.sessionId,
@@ -34,9 +34,9 @@ export async function saveBehaviorToSupabase(
           timestamp: behavior.metadata.timestamp.toISOString(),
         },
         summary: behavior.summary as unknown,
-      })
+      } as any)
       .select('id')
-      .single();
+      .single());
 
     if (error) {
       console.error('[Supabase] 행동 데이터 저장 실패:', error);
@@ -120,7 +120,7 @@ export async function saveFeedbackToSupabase(
   const client = supabase;
 
   try {
-    const { data, error } = await client
+    const { data, error } = await (client
       .from('feedbacks')
       .insert({
         session_id: feedback.sessionId,
@@ -132,9 +132,9 @@ export async function saveFeedbackToSupabase(
           question: feedback.feedback.question || null,
           timestamp: feedback.feedback.timestamp.toISOString(),
         },
-      })
+      } as any)
       .select('id')
-      .single();
+      .single());
 
     if (error) {
       console.error('[Supabase] 피드백 데이터 저장 실패:', error);
