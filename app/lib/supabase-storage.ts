@@ -86,7 +86,7 @@ export async function getBehaviorsFromSupabase(
     if (!data) return [];
 
     // Supabase 데이터를 UserBehavior 형식으로 변환
-    return data.map((row) => ({
+    return (data as any[]).map((row: any) => ({
       sessionId: row.session_id,
       userId: row.user_id || undefined,
       variant: row.variant as 'A' | 'B',
@@ -189,7 +189,7 @@ export async function getFeedbacksFromSupabase(
     if (!data) return [];
 
     // Supabase 데이터를 FeedbackData 형식으로 변환
-    return data.map((row) => ({
+    return (data as any[]).map((row: any) => ({
       sessionId: row.session_id,
       variant: row.variant as 'A' | 'B',
       behaviorSummary: row.behavior_summary || {
