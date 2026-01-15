@@ -9,6 +9,30 @@
   # pnpm 사용
   PNPM_VERSION = "10"
 
+# Netlify Functions 설정
+[functions]
+  node_bundler = "esbuild"
+
+# API 라우트를 Netlify Functions로 리다이렉트
+[[redirects]]
+  from = "/api/behavior"
+  to = "/.netlify/functions/api-behavior"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/feedback"
+  to = "/.netlify/functions/api-feedback"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/api/feedback/analysis"
+  to = "/.netlify/functions/api-feedback-analysis"
+  status = 200
+  force = true
+
+# SPA 라우팅 (모든 다른 경로는 index.html로)
 [[redirects]]
   from = "/*"
   to = "/index.html"

@@ -203,7 +203,8 @@ export class BehaviorTracker {
       
       // Supabase 저장이 실패했거나 설정되지 않은 경우에만 로컬 API 호출
       // (Supabase가 있으면 API는 건너뛰고, Supabase가 없으면 API 사용)
-      if (!supabaseSaved) {
+      // GitHub Pages에서는 API 호출 건너뜀 (Netlify는 Functions 사용 가능)
+      if (!supabaseSaved && typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
         try {
           const response = await fetch('/api/behavior', {
             method: 'POST',
@@ -227,19 +228,17 @@ export class BehaviorTracker {
             if (contentType && contentType.includes('text/html')) {
               console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
             } else {
-              console.error('[Tracker] 로컬 API 전송 실패:', response.status);
+              console.log('[Tracker] 로컬 API 전송 실패:', response.status);
             }
           }
-        } catch (error) {
+        } catch {
           // 네트워크 오류 등 - localStorage에만 저장됨
-          if (error instanceof TypeError && error.message.includes('fetch')) {
-            console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
-          } else {
-            console.error('[Tracker] 로컬 API 전송 오류:', error);
-          }
+          console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
         }
-      } else {
+      } else if (supabaseSaved) {
         console.log('[Tracker] Supabase 저장 완료, 로컬 API 호출 건너뜀');
+      } else {
+        console.log('[Tracker] 정적 사이트 환경, 로컬 API 호출 건너뜀');
       }
     } finally {
       this.isSending = false;

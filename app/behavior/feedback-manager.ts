@@ -89,7 +89,8 @@ export class FeedbackManager {
 
     // Supabase 저장이 실패했거나 설정되지 않은 경우에만 로컬 API 호출
     // (Supabase가 있으면 API는 건너뛰고, Supabase가 없으면 API 사용)
-    if (!supabaseSaved) {
+    // GitHub Pages에서는 API 호출 건너뜀 (Netlify는 Functions 사용 가능)
+    if (!supabaseSaved && typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
       try {
         const response = await fetch('/api/feedback', {
           method: 'POST',
@@ -104,68 +105,25 @@ export class FeedbackManager {
           if (contentType && contentType.includes('text/html')) {
             console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
           } else {
-            console.error('[Feedback] 피드백 전송 실패:', response.status);
+            console.log('[Feedback] 피드백 전송 실패:', response.status);
           }
         } else {
           console.log('[Feedback] 로컬 API 전송 성공');
         }
       } catch (error) {
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
-        } else {
-          console.error('[Feedback] 피드백 전송 오류:', error);
-        }
+        console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
       }
-    } else {
+    } else if (supabaseSaved) {
       console.log('[Feedback] Supabase 저장 완료, 로컬 API 호출 건너뜀');
+    } else {
+      console.log('[Feedback] 정적 사이트 환경, 로컬 API 호출 건너뜀');
     }
   }
 
   async analyzeVariantFeedback(variant: 'A' | 'B'): Promise<VariantAnalysis> {
-    try {
-      const response = await fetch(`/api/feedback/analysis?variant=${variant}`);
-      
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('text/html')) {
-          // 정적 사이트 환경 - 기본값 반환
-          return {
-            variant,
-            avgRating: 0,
-            behaviorMetrics: {
-              avgTimeOnPage: 0,
-              conversionRate: 0,
-              engagementScore: 0,
-              totalSessions: 0,
-            },
-            feedbackCount: 0,
-          };
-        }
-        // HTTP 에러는 조용히 처리하고 기본값 반환
-        const errorText = await response.text().catch(() => '');
-        console.warn(`[Feedback] 분석 API 실패 (${response.status}):`, errorText || response.statusText);
-        return {
-          variant,
-          avgRating: 0,
-          behaviorMetrics: {
-            avgTimeOnPage: 0,
-            conversionRate: 0,
-            engagementScore: 0,
-            totalSessions: 0,
-          },
-          feedbackCount: 0,
-        };
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.warn('[Feedback] API를 사용할 수 없습니다');
-      } else {
-        console.warn('[Feedback] 분석 실패:', error instanceof Error ? error.message : error);
-      }
-      // 기본값 반환 (에러를 throw하지 않음)
+    // GitHub Pages에서는 API 호출 건너뜀 (Netlify는 Functions 사용 가능)
+    if (typeof window !== 'undefined' && window.location.hostname.includes('github.io')) {
+      console.log('[Feedback] GitHub Pages 환경, 분석 API 호출 건너뜀');
       return {
         variant,
         avgRating: 0,
@@ -178,6 +136,73 @@ export class FeedbackManager {
         feedbackCount: 0,
       };
     }
+
+    // 로컬 개발 환경 또는 Netlify에서 API 호출 시도
+    if (typeof window !== 'undefined') {
+      try {
+        const response = await fetch(`/api/feedback/analysis?variant=${variant}`);
+        
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('text/html')) {
+            // 정적 사이트 환경 - 기본값 반환
+            return {
+              variant,
+              avgRating: 0,
+              behaviorMetrics: {
+                avgTimeOnPage: 0,
+                conversionRate: 0,
+                engagementScore: 0,
+                totalSessions: 0,
+              },
+              feedbackCount: 0,
+            };
+          }
+          // HTTP 에러는 조용히 처리하고 기본값 반환
+          console.log(`[Feedback] 분석 API 실패 (${response.status})`);
+          return {
+            variant,
+            avgRating: 0,
+            behaviorMetrics: {
+              avgTimeOnPage: 0,
+              conversionRate: 0,
+              engagementScore: 0,
+              totalSessions: 0,
+            },
+            feedbackCount: 0,
+          };
+        }
+        
+        const data = await response.json();
+        return data;
+      } catch {
+        console.log('[Feedback] 분석 API 호출 실패, 기본값 반환');
+        return {
+          variant,
+          avgRating: 0,
+          behaviorMetrics: {
+            avgTimeOnPage: 0,
+            conversionRate: 0,
+            engagementScore: 0,
+            totalSessions: 0,
+          },
+          feedbackCount: 0,
+        };
+      }
+    }
+
+    // 기본값 반환
+    return {
+      variant,
+      avgRating: 0,
+      behaviorMetrics: {
+        avgTimeOnPage: 0,
+        conversionRate: 0,
+        engagementScore: 0,
+        totalSessions: 0,
+      },
+      feedbackCount: 0,
+    };
   }
 }
 
