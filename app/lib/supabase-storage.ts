@@ -12,14 +12,20 @@ export async function saveBehaviorToSupabase(
     return null;
   }
 
+  // 타입 가드: supabase가 null이 아님을 확인
+  const client = supabase;
+  if (!client) {
+    return null;
+  }
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('behaviors')
       .insert({
         session_id: behavior.sessionId,
         user_id: behavior.userId || null,
         variant: behavior.variant,
-        events: behavior.events,
+        events: behavior.events as unknown,
         metadata: {
           pagePath: behavior.metadata.pagePath,
           referrer: behavior.metadata.referrer || null,
@@ -27,7 +33,7 @@ export async function saveBehaviorToSupabase(
           userAgent: behavior.metadata.userAgent || null,
           timestamp: behavior.metadata.timestamp.toISOString(),
         },
-        summary: behavior.summary,
+        summary: behavior.summary as unknown,
       })
       .select('id')
       .single();
@@ -56,8 +62,10 @@ export async function getBehaviorsFromSupabase(
     return [];
   }
 
+  const client = supabase;
+
   try {
-    let query = supabase.from('behaviors').select('*').order('created_at', { ascending: false });
+    let query = client.from('behaviors').select('*').order('created_at', { ascending: false });
 
     if (variant) {
       query = query.eq('variant', variant);
@@ -109,13 +117,15 @@ export async function saveFeedbackToSupabase(
     return null;
   }
 
+  const client = supabase;
+
   try {
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from('feedbacks')
       .insert({
         session_id: feedback.sessionId,
         variant: feedback.variant,
-        behavior_summary: feedback.behaviorSummary,
+        behavior_summary: feedback.behaviorSummary as unknown,
         feedback: {
           rating: feedback.feedback.rating || null,
           comment: feedback.feedback.comment || null,
@@ -150,8 +160,10 @@ export async function getFeedbacksFromSupabase(
     return [];
   }
 
+  const client = supabase;
+
   try {
-    let query = supabase.from('feedbacks').select('*').order('created_at', { ascending: false });
+    let query = client.from('feedbacks').select('*').order('created_at', { ascending: false });
 
     if (variant) {
       query = query.eq('variant', variant);
