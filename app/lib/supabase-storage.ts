@@ -43,8 +43,13 @@ export async function saveBehaviorToSupabase(
       return null;
     }
 
-    console.log('[Supabase] 행동 데이터 저장 성공:', data.id);
-    return { id: data.id };
+    const result = data as { id: string } | null;
+    if (!result) {
+      return null;
+    }
+
+    console.log('[Supabase] 행동 데이터 저장 성공:', result.id);
+    return { id: result.id };
   } catch (error) {
     console.error('[Supabase] 행동 데이터 저장 오류:', error);
     return null;
@@ -141,8 +146,13 @@ export async function saveFeedbackToSupabase(
       return null;
     }
 
-    console.log('[Supabase] 피드백 데이터 저장 성공:', data.id);
-    return { id: data.id };
+    const result = data as { id: string } | null;
+    if (!result) {
+      return null;
+    }
+
+    console.log('[Supabase] 피드백 데이터 저장 성공:', result.id);
+    return { id: result.id };
   } catch (error) {
     console.error('[Supabase] 피드백 데이터 저장 오류:', error);
     return null;
