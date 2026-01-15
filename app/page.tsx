@@ -1,5 +1,17 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import styles from "./page.module.css";
+
+export const metadata: Metadata = {
+  title: "홈",
+  description: "A/B 테스트와 피드백 수집을 연계한 행태감지 시스템 데모입니다. 사용자의 행동 패턴을 분석하고 적절한 시점에 피드백을 수집합니다.",
+  keywords: ["행태감지", "A/B 테스트", "피드백 수집", "사용자 행동 분석"],
+  openGraph: {
+    title: "행태감지 시스템",
+    description: "A/B 테스트와 피드백 수집을 연계한 행태감지 시스템",
+    type: "website",
+  },
+};
 
 export default function Home() {
   return (

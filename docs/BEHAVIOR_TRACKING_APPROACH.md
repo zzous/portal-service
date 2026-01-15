@@ -64,7 +64,7 @@
 class BehaviorTracker {
   // 이벤트 리스너로 행동 추적
   // 30초마다 배치 전송
-  // localStorage + MockAPI.io + 로컬 API
+  // localStorage + 로컬 API
 }
 ```
 
@@ -105,7 +105,7 @@ class BehaviorTracker {
 
 ### 3.3 현재 프로젝트
 ```
-클라이언트 추적 → localStorage + MockAPI.io + 로컬 API → 분석
+클라이언트 추적 → localStorage + 로컬 API → 분석
 ```
 
 ## 4. 권장 사항
@@ -135,8 +135,8 @@ class BehaviorTracker {
 
 **개선이 필요한 부분**:
 1. **데이터베이스 연동**
-   - 현재: localStorage + MockAPI.io (임시)
-   - 권장: PostgreSQL/MongoDB 연동
+   - 현재: localStorage (임시)
+   - 권장: PostgreSQL/MongoDB 연동 (Supabase 사용 예정)
 
 2. **빌드 스크립트 제거**
    - 현재: API 라우트 임시 이동 (GitHub Pages 제약)

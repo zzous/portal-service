@@ -166,7 +166,7 @@ export default function ReportPage() {
         <section className={styles.section}>
           <h2>4. 데이터 저장 전략</h2>
 
-          {/* <h3>4.1 이중 저장 구조</h3>
+          <h3>4.1 이중 저장 구조</h3>
           <div className={styles.storageGrid}>
             <div className={styles.storageCard}>
               <h4>localStorage</h4>
@@ -181,14 +181,14 @@ export default function ReportPage() {
               <p><strong>특징:</strong> 서버 재시작 시 초기화</p>
             </div>
             <div className={styles.storageCard}>
-              <h4>MockAPI.io</h4>
-              <p><strong>목적:</strong> 외부 API를 통한 영구 저장</p>
-              <p><strong>위치:</strong> <code>app/lib/mockapi.ts</code></p>
-              <p><strong>특징:</strong> 실제 데이터베이스처럼 작동, 영구 저장</p>
+              <h4>Supabase (예정)</h4>
+              <p><strong>목적:</strong> 프로덕션 환경에서 영구 저장</p>
+              <p><strong>위치:</strong> <code>app/lib/supabase-storage.ts</code></p>
+              <p><strong>특징:</strong> PostgreSQL 기반, 영구 저장 및 실시간 동기화</p>
             </div>
-          </div> */}
+          </div>
 
-          <h3>4.1 데이터 흐름</h3>
+          <h3>4.2 데이터 흐름</h3>
           <div className={styles.flow}>
             <div className={styles.flowStep}>사용자 행동</div>
             <div className={styles.flowArrow}>↓</div>
@@ -196,7 +196,6 @@ export default function ReportPage() {
             <div className={styles.flowArrow}>↓</div>
             <div className={styles.flowParallel}>
               <div className={styles.flowStep}>localStorage<br />(항상 저장)</div>
-              <div className={styles.flowStep}>MockAPI.io<br />(항상 저장)</div>
               <div className={styles.flowStep}>로컬 API<br />(개발 환경)</div>
             </div>
             <div className={styles.flowArrow}>↓</div>
@@ -222,7 +221,6 @@ export default function ReportPage() {
             <div className={styles.treeItem} style={{ marginLeft: '20px' }}><strong>lib/</strong></div>
             <div className={styles.treeItem} style={{ marginLeft: '40px' }}>storage.ts - 서버 사이드 저장소</div>
             <div className={styles.treeItem} style={{ marginLeft: '40px' }}>client-storage.ts - 클라이언트 사이드 저장소</div>
-            <div className={styles.treeItem} style={{ marginLeft: '40px' }}>mockapi.ts - MockAPI.io 연동</div>
             <div className={styles.treeItem} style={{ marginLeft: '20px' }}><strong>api/</strong></div>
             <div className={styles.treeItem} style={{ marginLeft: '40px' }}>behavior/route.ts - 행동 데이터 API</div>
             <div className={styles.treeItem} style={{ marginLeft: '40px' }}>feedback/route.ts - 피드백 API</div>
@@ -445,7 +443,7 @@ export default function ReportPage() {
               <h4>현재 프로젝트</h4>
               <p>프로토타입/데모</p>
               <div className={styles.flowDiagram}>
-                클라이언트 추적 → localStorage + MockAPI.io + 로컬 API → 분석
+                클라이언트 추적 → localStorage + 로컬 API → 분석
               </div>
             </div>
           </div>
@@ -492,7 +490,7 @@ export default function ReportPage() {
           <div className={styles.improvement}>
             <h4>개선이 필요한 부분</h4>
             <ul>
-              <li><strong>데이터베이스 연동:</strong> localStorage + MockAPI.io (임시) → PostgreSQL/MongoDB 연동</li>
+              <li><strong>데이터베이스 연동:</strong> localStorage (임시) → PostgreSQL/MongoDB 연동</li>
               <li><strong>빌드 스크립트 제거:</strong> Vercel/Netlify 사용 또는 서버 환경 구축</li>
               <li><strong>데이터 검증 및 정제:</strong> 서버 측 검증 추가</li>
               <li><strong>실시간 분석:</strong> WebSocket 또는 Server-Sent Events</li>

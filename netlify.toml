@@ -1,0 +1,14 @@
+[build]
+  command = "npm run build"
+  publish = "out"
+
+[build.environment]
+  NODE_VERSION = "20"
+  NODE_ENV = "production"
+  # Netlify는 basePath를 사용하지 않으므로 GITHUB_PAGES를 설정하지 않음
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+

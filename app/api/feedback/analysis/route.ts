@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VariantAnalysis, FeedbackData, UserBehavior } from '@/app/behavior/types';
 import { behaviorStore, feedbackStore } from '@/app/lib/storage';
+import { getBehaviorsFromSupabase, getFeedbacksFromSupabase } from '@/app/lib/supabase-storage';
 
 // 정적 사이트 빌드에서 제외 (output: 'export' 사용 시)
 export const dynamic = 'force-dynamic';
@@ -19,13 +20,40 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 공유 저장소에서 직접 데이터 가져오기
-    const variantFeedbacks: FeedbackData[] = (feedbackStore || []).filter(
-      (f) => f && f.variant === variant
-    );
-    const variantBehaviors: UserBehavior[] = (behaviorStore || []).filter(
-      (b) => b && b.variant === variant
-    );
+    // Supabase에서 데이터 조회 시도
+    let variantFeedbacks: FeedbackData[] = [];
+    let variantBehaviors: UserBehavior[] = [];
+    let dataSource = 'memory';
+
+    try {
+      const [supabaseFeedbacks, supabaseBehaviors] = await Promise.all([
+        getFeedbacksFromSupabase(variant),
+        getBehaviorsFromSupabase(variant),
+      ]);
+
+      if (supabaseFeedbacks.length > 0 || supabaseBehaviors.length > 0) {
+        variantFeedbacks = supabaseFeedbacks;
+        variantBehaviors = supabaseBehaviors;
+        dataSource = 'supabase';
+      } else {
+        // Supabase에 데이터가 없으면 in-memory 저장소 사용
+        variantFeedbacks = (feedbackStore || []).filter(
+          (f) => f && f.variant === variant
+        );
+        variantBehaviors = (behaviorStore || []).filter(
+          (b) => b && b.variant === variant
+        );
+      }
+    } catch (error) {
+      // Supabase 조회 실패 시 in-memory 저장소 사용
+      console.error('[API] Supabase 조회 실패, in-memory 저장소 사용:', error);
+      variantFeedbacks = (feedbackStore || []).filter(
+        (f) => f && f.variant === variant
+      );
+      variantBehaviors = (behaviorStore || []).filter(
+        (b) => b && b.variant === variant
+      );
+    }
 
     // 평균 평점 계산
     const ratings = variantFeedbacks

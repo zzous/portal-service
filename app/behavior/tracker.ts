@@ -108,10 +108,23 @@ export class BehaviorTracker {
     this.maxScrollDepth = 0;
     this.clickCount = 0;
 
+    // 메타데이터에서 페이지 정보 추출 (Analytics 용도)
+    let pageTitle = '';
+    let pageDescription = '';
+    if (typeof window !== 'undefined') {
+      pageTitle = document.title;
+      const metaDescription = document.querySelector('meta[name="description"]');
+      pageDescription = metaDescription?.getAttribute('content') || '';
+    }
+
     const event: BehaviorEvent = {
       type: 'view',
       timestamp: 0,
       pagePath,
+      value: JSON.stringify({
+        title: pageTitle,
+        description: pageDescription,
+      }),
     };
     this.events.push(event);
   }
@@ -174,51 +187,59 @@ export class BehaviorTracker {
         ClientStorage.saveBehavior(behavior);
       }
       
-      // MockAPI.io에 전송 (환경 변수 설정 시)
-      if (typeof window !== 'undefined') {
-        try {
-          const { saveBehaviorToMockAPI } = await import('../lib/mockapi');
-          await saveBehaviorToMockAPI(behavior);
-        } catch (error) {
-          // MockAPI 실패해도 계속 진행
-          console.warn('[Tracker] MockAPI 전송 실패:', error);
-        }
-      }
-      
-      // 로컬 API가 있으면 서버에도 전송
+      // Supabase에 저장 (환경 변수가 설정된 경우)
+      let supabaseSaved = false;
       try {
-        const response = await fetch('/api/behavior', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(behavior),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          console.log('[Tracker] 로컬 API 전송 성공:', {
-            sessionId: behavior.sessionId,
-            variant: behavior.variant,
-            events: behavior.events.length,
-            shouldRequestFeedback: data.shouldRequestFeedback,
-          });
-        } else {
-          // API가 사용 불가능한 경우 - localStorage에만 저장됨
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('text/html')) {
-            console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
-          } else {
-            console.error('[Tracker] 로컬 API 전송 실패:', response.status);
-          }
+        const { saveBehaviorToSupabase } = await import('../lib/supabase-storage');
+        const result = await saveBehaviorToSupabase(behavior);
+        if (result) {
+          console.log('[Tracker] Supabase 저장 성공:', result.id);
+          supabaseSaved = true;
         }
       } catch (error) {
-        // 네트워크 오류 등 - localStorage에만 저장됨
-        if (error instanceof TypeError && error.message.includes('fetch')) {
-          console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
-        } else {
-          console.error('[Tracker] 로컬 API 전송 오류:', error);
+        // Supabase 저장 실패는 조용히 처리 (localStorage는 이미 저장됨)
+        console.log('[Tracker] Supabase 저장 건너뜀:', error instanceof Error ? error.message : 'Unknown error');
+      }
+      
+      // Supabase 저장이 실패했거나 설정되지 않은 경우에만 로컬 API 호출
+      // (Supabase가 있으면 API는 건너뛰고, Supabase가 없으면 API 사용)
+      if (!supabaseSaved) {
+        try {
+          const response = await fetch('/api/behavior', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(behavior),
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('[Tracker] 로컬 API 전송 성공:', {
+              sessionId: behavior.sessionId,
+              variant: behavior.variant,
+              events: behavior.events.length,
+              shouldRequestFeedback: data.shouldRequestFeedback,
+            });
+          } else {
+            // API가 사용 불가능한 경우 - localStorage에만 저장됨
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('text/html')) {
+              console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
+            } else {
+              console.error('[Tracker] 로컬 API 전송 실패:', response.status);
+            }
+          }
+        } catch (error) {
+          // 네트워크 오류 등 - localStorage에만 저장됨
+          if (error instanceof TypeError && error.message.includes('fetch')) {
+            console.log('[Tracker] 로컬 API 없음, localStorage에 저장됨');
+          } else {
+            console.error('[Tracker] 로컬 API 전송 오류:', error);
+          }
         }
+      } else {
+        console.log('[Tracker] Supabase 저장 완료, 로컬 API 호출 건너뜀');
       }
     } finally {
       this.isSending = false;

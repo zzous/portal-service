@@ -73,40 +73,51 @@ export class FeedbackManager {
       ClientStorage.saveFeedback(feedbackData);
     }
 
-    // MockAPI.io에 전송 (환경 변수 설정 시)
-    if (typeof window !== 'undefined') {
-      try {
-        const { saveFeedbackToMockAPI } = await import('../lib/mockapi');
-        await saveFeedbackToMockAPI(feedbackData);
-      } catch (error) {
-        console.warn('[Feedback] MockAPI 전송 실패:', error);
-      }
-    }
-
-    // 로컬 API가 있으면 서버에도 전송
+    // Supabase에 저장 (환경 변수가 설정된 경우)
+    let supabaseSaved = false;
     try {
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(feedbackData),
-      });
-      
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('text/html')) {
-          console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
-        } else {
-          console.error('[Feedback] 피드백 전송 실패:', response.status);
-        }
+      const { saveFeedbackToSupabase } = await import('../lib/supabase-storage');
+      const result = await saveFeedbackToSupabase(feedbackData);
+      if (result) {
+        console.log('[Feedback] Supabase 저장 성공:', result.id);
+        supabaseSaved = true;
       }
     } catch (error) {
-      if (error instanceof TypeError && error.message.includes('fetch')) {
-        console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
-      } else {
-        console.error('[Feedback] 피드백 전송 오류:', error);
+      // Supabase 저장 실패는 조용히 처리 (localStorage는 이미 저장됨)
+      console.log('[Feedback] Supabase 저장 건너뜀:', error instanceof Error ? error.message : 'Unknown error');
+    }
+
+    // Supabase 저장이 실패했거나 설정되지 않은 경우에만 로컬 API 호출
+    // (Supabase가 있으면 API는 건너뛰고, Supabase가 없으면 API 사용)
+    if (!supabaseSaved) {
+      try {
+        const response = await fetch('/api/feedback', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(feedbackData),
+        });
+        
+        if (!response.ok) {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('text/html')) {
+            console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
+          } else {
+            console.error('[Feedback] 피드백 전송 실패:', response.status);
+          }
+        } else {
+          console.log('[Feedback] 로컬 API 전송 성공');
+        }
+      } catch (error) {
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+          console.log('[Feedback] 로컬 API 없음, localStorage에 저장됨');
+        } else {
+          console.error('[Feedback] 피드백 전송 오류:', error);
+        }
       }
+    } else {
+      console.log('[Feedback] Supabase 저장 완료, 로컬 API 호출 건너뜀');
     }
   }
 

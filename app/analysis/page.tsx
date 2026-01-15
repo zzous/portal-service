@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { VariantAnalysis } from '../behavior/types';
+import { VariantAnalysis, UserBehavior, FeedbackData, BehaviorEvent } from '../behavior/types';
 import styles from './page.module.css';
 
 export default function AnalysisPage() {
@@ -20,18 +20,60 @@ export default function AnalysisPage() {
     isFetchingRef.current = true;
     setLoading(true);
     try {
-      // 먼저 localStorage에서 데이터 가져오기
-      const { ClientStorage } = await import('../lib/client-storage');
-      const behaviorsA = ClientStorage.getBehaviorsByVariant('A');
-      const behaviorsB = ClientStorage.getBehaviorsByVariant('B');
-      const feedbacksA = ClientStorage.getFeedbacksByVariant('A');
-      const feedbacksB = ClientStorage.getFeedbacksByVariant('B');
+      // 1. Supabase에서 직접 조회 시도
+      let supabaseBehaviorsA: UserBehavior[] = [];
+      let supabaseBehaviorsB: UserBehavior[] = [];
+      let supabaseFeedbacksA: FeedbackData[] = [];
+      let supabaseFeedbacksB: FeedbackData[] = [];
+      let supabaseSuccess = false;
+
+      try {
+        const { getBehaviorsFromSupabase, getFeedbacksFromSupabase } = await import('../lib/supabase-storage');
+        const [behaviorsA, behaviorsB, feedbacksA, feedbacksB] = await Promise.all([
+          getBehaviorsFromSupabase('A'),
+          getBehaviorsFromSupabase('B'),
+          getFeedbacksFromSupabase('A'),
+          getFeedbacksFromSupabase('B'),
+        ]);
+        supabaseBehaviorsA = behaviorsA;
+        supabaseBehaviorsB = behaviorsB;
+        supabaseFeedbacksA = feedbacksA;
+        supabaseFeedbacksB = feedbacksB;
+        supabaseSuccess = true;
+        console.log('[Analysis] Supabase에서 데이터 조회 완료');
+      } catch (error) {
+        // Supabase 조회 실패
+        console.log('[Analysis] Supabase 조회 실패, localStorage 사용:', error instanceof Error ? error.message : 'Unknown error');
+        supabaseSuccess = false;
+      }
+
+      let finalBehaviorsA: UserBehavior[];
+      let finalBehaviorsB: UserBehavior[];
+      let finalFeedbacksA: FeedbackData[];
+      let finalFeedbacksB: FeedbackData[];
+
+      if (supabaseSuccess) {
+        // Supabase 조회 성공 시 localStorage 제외
+        finalBehaviorsA = supabaseBehaviorsA;
+        finalBehaviorsB = supabaseBehaviorsB;
+        finalFeedbacksA = supabaseFeedbacksA;
+        finalFeedbacksB = supabaseFeedbacksB;
+        console.log('[Analysis] Supabase 데이터만 사용 (localStorage 제외)');
+      } else {
+        // Supabase 조회 실패 시 localStorage만 사용
+        const { ClientStorage } = await import('../lib/client-storage');
+        finalBehaviorsA = ClientStorage.getBehaviorsByVariant('A');
+        finalBehaviorsB = ClientStorage.getBehaviorsByVariant('B');
+        finalFeedbacksA = ClientStorage.getFeedbacksByVariant('A');
+        finalFeedbacksB = ClientStorage.getFeedbacksByVariant('B');
+        console.log('[Analysis] localStorage 데이터만 사용');
+      }
 
       // localStorage 데이터로 분석 계산
       const calculateAnalysis = (
         variant: 'A' | 'B',
-        behaviors: any[],
-        feedbacks: any[]
+        behaviors: UserBehavior[],
+        feedbacks: FeedbackData[]
       ): VariantAnalysis => {
         const ratings = feedbacks
           .map((f) => f.feedback?.rating)
@@ -48,12 +90,12 @@ export default function AnalysisPage() {
             : 0;
 
         const conversions = behaviors.filter((b) =>
-          b.events?.some((e: any) => e.type === 'conversion')
+          b.events?.some((e: BehaviorEvent) => e.type === 'conversion')
         );
         const conversionRate =
           behaviors.length > 0 ? (conversions.length / behaviors.length) * 100 : 0;
 
-        const engagementScores = behaviors.map((b: any) => {
+        const engagementScores = behaviors.map((b) => {
           const clickScore = (b.summary?.clickCount || 0) * 10;
           const scrollScore = b.summary?.scrollDepth || 0;
           return clickScore + scrollScore;
@@ -76,42 +118,8 @@ export default function AnalysisPage() {
         };
       };
 
-      let dataA = calculateAnalysis('A', behaviorsA, feedbacksA);
-      let dataB = calculateAnalysis('B', behaviorsB, feedbacksB);
-
-      // API가 있으면 서버에서도 가져오기 (병합)
-      try {
-        const [resA, resB] = await Promise.all([
-          fetch('/api/feedback/analysis?variant=A'),
-          fetch('/api/feedback/analysis?variant=B'),
-        ]);
-
-        const contentTypeA = resA.headers.get('content-type');
-        const contentTypeB = resB.headers.get('content-type');
-
-        if (resA.ok && contentTypeA && contentTypeA.includes('application/json')) {
-          try {
-            const apiDataA = await resA.json();
-            // 서버 데이터와 병합 (서버 데이터 우선)
-            dataA = apiDataA;
-          } catch (e) {
-            // 파싱 실패 시 localStorage 데이터 사용
-          }
-        }
-
-        if (resB.ok && contentTypeB && contentTypeB.includes('application/json')) {
-          try {
-            const apiDataB = await resB.json();
-            // 서버 데이터와 병합 (서버 데이터 우선)
-            dataB = apiDataB;
-          } catch (e) {
-            // 파싱 실패 시 localStorage 데이터 사용
-          }
-        }
-      } catch (error) {
-        // API 실패 시 localStorage 데이터만 사용
-        console.log('[Analysis] API 없음, localStorage 데이터 사용');
-      }
+      const dataA = calculateAnalysis('A', finalBehaviorsA, finalFeedbacksA);
+      const dataB = calculateAnalysis('B', finalBehaviorsB, finalFeedbacksB);
 
       setAnalysisA(dataA);
       setAnalysisB(dataB);
