@@ -13,16 +13,11 @@
 [functions]
   node_bundler = "esbuild"
 
-# API 라우트를 Netlify Functions로 리다이렉트
+# SPA 라우팅 (모든 다른 경로는 index.html로, API 제외)
+# API 라우트는 Functions로 리다이렉트 (더 구체적인 경로를 먼저)
 [[redirects]]
   from = "/api/behavior"
   to = "/.netlify/functions/api-behavior"
-  status = 200
-  force = true
-
-[[redirects]]
-  from = "/api/feedback"
-  to = "/.netlify/functions/api-feedback"
   status = 200
   force = true
 
@@ -32,7 +27,13 @@
   status = 200
   force = true
 
-# SPA 라우팅 (모든 다른 경로는 index.html로)
+[[redirects]]
+  from = "/api/feedback"
+  to = "/.netlify/functions/api-feedback"
+  status = 200
+  force = true
+
+# SPA 라우팅 (API를 제외한 모든 경로는 index.html로)
 [[redirects]]
   from = "/*"
   to = "/index.html"

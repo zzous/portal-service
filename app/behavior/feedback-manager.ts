@@ -74,6 +74,7 @@ export class FeedbackManager {
     }
 
     // Supabase에 저장 (환경 변수가 설정된 경우)
+    // Supabase는 클라이언트 사이드에서 직접 호출하므로 서버 API 불필요
     try {
       const { saveFeedbackToSupabase } = await import('../lib/supabase-storage');
       const result = await saveFeedbackToSupabase(feedbackData);
@@ -83,33 +84,6 @@ export class FeedbackManager {
     } catch (error) {
       // Supabase 저장 실패는 조용히 처리 (localStorage는 이미 저장됨)
       console.log('[Feedback] Supabase 저장 건너뜀:', error instanceof Error ? error.message : 'Unknown error');
-    }
-
-    // Netlify에서는 API 호출 가능 (GitHub Pages는 제외)
-    // Supabase와 관계없이 API도 함께 호출 (중복 저장 가능)
-    if (typeof window !== 'undefined' && !window.location.hostname.includes('github.io')) {
-      try {
-        const response = await fetch('/api/feedback', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(feedbackData),
-        });
-        
-        if (!response.ok) {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('text/html')) {
-            console.log('[Feedback] API 없음 (정적 사이트)');
-          } else {
-            console.log('[Feedback] API 전송 실패:', response.status);
-          }
-        } else {
-          console.log('[Feedback] API 전송 성공');
-        }
-      } catch {
-        console.log('[Feedback] API 호출 실패');
-      }
     }
   }
 
