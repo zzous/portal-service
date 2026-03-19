@@ -10,12 +10,16 @@ interface FeedbackCollectorProps {
   tracker: BehaviorTracker;
 }
 
+const FEEDBACK_SHOWN_KEY = 'portal-service-feedback-shown';
+
 export function FeedbackCollector({ variant, tracker }: FeedbackCollectorProps) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedbackData, setFeedbackData] = useState({ rating: 0, comment: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const feedbackManagerRef = useRef<FeedbackManager | null>(null);
+  /** 세션당 한 번만 팝업 표시 (닫아도 다시 안 띄움) */
+  const alreadyShownRef = useRef(false);
 
   useEffect(() => {
     if (!feedbackManagerRef.current) {
@@ -24,19 +28,26 @@ export function FeedbackCollector({ variant, tracker }: FeedbackCollectorProps) 
 
     const feedbackManager = feedbackManagerRef.current;
 
-    // 행동 패턴 체크 (5초마다)
+    // 행동 패턴 체크 (5초마다), 세션당 최대 1회만 표시
     const checkInterval = setInterval(() => {
-      if (!showFeedback && !submitted) {
-        const behavior = tracker.getCurrentBehavior();
-        const shouldShow = feedbackManager.checkFeedbackTriggers(behavior);
-        if (shouldShow) {
-          console.log('[Feedback] 피드백 트리거 조건 충족:', {
-            timeOnPage: behavior.summary.timeOnPage,
-            scrollDepth: behavior.summary.scrollDepth,
-            clickCount: behavior.summary.clickCount,
-          });
-          setShowFeedback(true);
+      if (typeof sessionStorage !== 'undefined' && sessionStorage.getItem(FEEDBACK_SHOWN_KEY)) {
+        alreadyShownRef.current = true;
+      }
+      if (alreadyShownRef.current || showFeedback || submitted) return;
+
+      const behavior = tracker.getCurrentBehavior();
+      const shouldShow = feedbackManager.checkFeedbackTriggers(behavior);
+      if (shouldShow) {
+        alreadyShownRef.current = true;
+        if (typeof sessionStorage !== 'undefined') {
+          sessionStorage.setItem(FEEDBACK_SHOWN_KEY, '1');
         }
+        console.log('[Feedback] 피드백 트리거 조건 충족 (이 세션에서 1회만 표시):', {
+          timeOnPage: behavior.summary.timeOnPage,
+          scrollDepth: behavior.summary.scrollDepth,
+          clickCount: behavior.summary.clickCount,
+        });
+        setShowFeedback(true);
       }
     }, 5000);
 

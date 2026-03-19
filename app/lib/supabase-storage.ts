@@ -1,5 +1,47 @@
 import { supabase } from './supabase-client';
 import { UserBehavior, FeedbackData } from '../behavior/types';
+import type { BehaviorEvent } from '../behavior/types';
+
+/** behaviors 테이블 insert용 행 타입 (snake_case) */
+type BehaviorRowInsert = {
+  session_id: string;
+  user_id: string | null;
+  variant: 'A' | 'B';
+  events: unknown;
+  metadata: {
+    pagePath: string;
+    referrer: string | null;
+    deviceType: string;
+    userAgent: string | null;
+    timestamp: string;
+  };
+  summary: unknown;
+};
+
+/** feedbacks 테이블 insert용 행 타입 (snake_case) */
+type FeedbackRowInsert = {
+  session_id: string;
+  variant: 'A' | 'B';
+  behavior_summary: unknown;
+  feedback: {
+    rating: number | null;
+    comment: string | null;
+    question: string | null;
+    timestamp: string;
+  };
+};
+
+/** behaviors 테이블 select 시 반환 행 (snake_case) */
+interface BehaviorRowSelect extends BehaviorRowInsert {
+  id: string;
+  created_at?: string;
+}
+
+/** feedbacks 테이블 select 시 반환 행 (snake_case) */
+interface FeedbackRowSelect extends FeedbackRowInsert {
+  id: string;
+  created_at?: string;
+}
 
 /**
  * Supabase에 행동 데이터 저장
@@ -19,27 +61,29 @@ export async function saveBehaviorToSupabase(
   }
 
   try {
-    const { data, error } = await (client
+    const row: BehaviorRowInsert = {
+      session_id: behavior.sessionId,
+      user_id: behavior.userId || null,
+      variant: behavior.variant,
+      events: behavior.events,
+      metadata: {
+        pagePath: behavior.metadata.pagePath,
+        referrer: behavior.metadata.referrer || null,
+        deviceType: behavior.metadata.deviceType,
+        userAgent: behavior.metadata.userAgent || null,
+        timestamp: behavior.metadata.timestamp.toISOString(),
+      },
+      summary: behavior.summary,
+    };
+    // 스키마 미정의 시 insert가 never를 기대하므로 타입 단언 사용
+    const { data, error } = await client
       .from('behaviors')
-      .insert({
-        session_id: behavior.sessionId,
-        user_id: behavior.userId || null,
-        variant: behavior.variant,
-        events: behavior.events as unknown,
-        metadata: {
-          pagePath: behavior.metadata.pagePath,
-          referrer: behavior.metadata.referrer || null,
-          deviceType: behavior.metadata.deviceType,
-          userAgent: behavior.metadata.userAgent || null,
-          timestamp: behavior.metadata.timestamp.toISOString(),
-        },
-        summary: behavior.summary as unknown,
-      } as any)
+      .insert(row as never)
       .select('id')
-      .single());
+      .single();
 
     if (error) {
-      console.error('[Supabase] 행동 데이터 저장 실패:', error);
+      console.log('[Supabase] 행동 데이터 저장 실패:', error);
       return null;
     }
 
@@ -51,7 +95,7 @@ export async function saveBehaviorToSupabase(
     console.log('[Supabase] 행동 데이터 저장 성공:', result.id);
     return { id: result.id };
   } catch (error) {
-    console.error('[Supabase] 행동 데이터 저장 오류:', error);
+    console.log('[Supabase] 행동 데이터 저장 오류:', error);
     return null;
   }
 }
@@ -85,25 +129,25 @@ export async function getBehaviorsFromSupabase(
 
     if (!data) return [];
 
-    // Supabase 데이터를 UserBehavior 형식으로 변환
-    return (data as any[]).map((row: any) => ({
+    const defaultSummary: UserBehavior['summary'] = {
+      timeOnPage: 0,
+      scrollDepth: 0,
+      clickCount: 0,
+      pagesVisited: [],
+    };
+    return (data as BehaviorRowSelect[]).map((row: BehaviorRowSelect): UserBehavior => ({
       sessionId: row.session_id,
-      userId: row.user_id || undefined,
+      userId: row.user_id ?? undefined,
       variant: row.variant as 'A' | 'B',
-      events: row.events || [],
+      events: (row.events ?? []) as BehaviorEvent[],
       metadata: {
-        pagePath: row.metadata?.pagePath || '',
-        referrer: row.metadata?.referrer,
-        deviceType: row.metadata?.deviceType || 'desktop',
-        userAgent: row.metadata?.userAgent,
-        timestamp: new Date(row.metadata?.timestamp || row.created_at),
+        pagePath: row.metadata?.pagePath ?? '',
+        referrer: row.metadata?.referrer ?? undefined,
+        deviceType: (row.metadata?.deviceType ?? 'desktop') as UserBehavior['metadata']['deviceType'],
+        userAgent: row.metadata?.userAgent ?? undefined,
+        timestamp: new Date(row.metadata?.timestamp ?? row.created_at ?? Date.now()),
       },
-      summary: row.summary || {
-        timeOnPage: 0,
-        scrollDepth: 0,
-        clickCount: 0,
-        pagesVisited: [],
-      },
+      summary: (row.summary ?? defaultSummary) as UserBehavior['summary'],
     }));
   } catch (error) {
     console.error('[Supabase] 행동 데이터 조회 오류:', error);
@@ -125,21 +169,23 @@ export async function saveFeedbackToSupabase(
   const client = supabase;
 
   try {
-    const { data, error } = await (client
+    const row: FeedbackRowInsert = {
+      session_id: feedback.sessionId,
+      variant: feedback.variant,
+      behavior_summary: feedback.behaviorSummary,
+      feedback: {
+        rating: feedback.feedback.rating ?? null,
+        comment: feedback.feedback.comment ?? null,
+        question: feedback.feedback.question ?? null,
+        timestamp: feedback.feedback.timestamp.toISOString(),
+      },
+    };
+    // 스키마 미정의 시 insert가 never를 기대하므로 타입 단언 사용
+    const { data, error } = await client
       .from('feedbacks')
-      .insert({
-        session_id: feedback.sessionId,
-        variant: feedback.variant,
-        behavior_summary: feedback.behaviorSummary as unknown,
-        feedback: {
-          rating: feedback.feedback.rating || null,
-          comment: feedback.feedback.comment || null,
-          question: feedback.feedback.question || null,
-          timestamp: feedback.feedback.timestamp.toISOString(),
-        },
-      } as any)
+      .insert(row as never)
       .select('id')
-      .single());
+      .single();
 
     if (error) {
       console.error('[Supabase] 피드백 데이터 저장 실패:', error);
@@ -188,21 +234,21 @@ export async function getFeedbacksFromSupabase(
 
     if (!data) return [];
 
-    // Supabase 데이터를 FeedbackData 형식으로 변환
-    return (data as any[]).map((row: any) => ({
+    const defaultBehaviorSummary: FeedbackData['behaviorSummary'] = {
+      timeOnPage: 0,
+      scrollDepth: 0,
+      clickCount: 0,
+      pagesVisited: [],
+    };
+    return (data as FeedbackRowSelect[]).map((row: FeedbackRowSelect): FeedbackData => ({
       sessionId: row.session_id,
       variant: row.variant as 'A' | 'B',
-      behaviorSummary: row.behavior_summary || {
-        timeOnPage: 0,
-        scrollDepth: 0,
-        clickCount: 0,
-        pagesVisited: [],
-      },
+      behaviorSummary: (row.behavior_summary ?? defaultBehaviorSummary) as FeedbackData['behaviorSummary'],
       feedback: {
-        rating: row.feedback?.rating,
-        comment: row.feedback?.comment,
-        question: row.feedback?.question,
-        timestamp: new Date(row.feedback?.timestamp || row.created_at),
+        rating: row.feedback?.rating ?? undefined,
+        comment: row.feedback?.comment ?? undefined,
+        question: row.feedback?.question ?? undefined,
+        timestamp: new Date(row.feedback?.timestamp ?? row.created_at ?? Date.now()),
       },
     }));
   } catch (error) {
